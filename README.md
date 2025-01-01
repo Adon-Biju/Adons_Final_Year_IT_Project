@@ -12,7 +12,7 @@
 * Activate the new conda environment "conda activate face_recognition_env"
 * Install face_recognition packages within this conda environment since some of the packages (specifically the dlib package within face_recognise cannot be installed outside this environment). Use this command -> "conda install -c conda-forge face_recognition"
 * pip install opencv-python 
-* Run python3 main.py
+* Run python3 dlib_face_recognition.py
 
 
 
