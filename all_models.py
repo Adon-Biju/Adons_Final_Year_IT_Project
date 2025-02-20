@@ -14,9 +14,11 @@ total_attempts = successful_recognitions = 0
 processing_times = []
 confidence_scores = []
 
-def check_face(frame, model, csv_file):
-    global camera_is_busy, current_frame
-    
+def calculate_averages():
+    avg_rate = (successful_recognitions / total_attempts * 100) if total_attempts > 0 else 0
+    avg_time = sum(processing_times) / len(processing_times) if processing_times else 0
+    avg_conf = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
+    return avg_rate, avg_time, avg_conf
     if camera_is_busy:
         return
         
