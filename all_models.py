@@ -19,70 +19,55 @@ def calculate_averages():
     avg_time = sum(processing_times) / len(processing_times) if processing_times else 0
     avg_conf = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
     return avg_rate, avg_time, avg_conf
+
+def check_face(frame, model):
+    global camera_is_busy, current_frame, total_attempts, successful_recognitions, last_detected_person
     if camera_is_busy:
         return
-        
     camera_is_busy = True
     
     try:
-        # Try to find faces using Deepfaces find function
-        result = DeepFace.find(
-            frame,
-            db_path="face_photos",
-            model_name=model,
-            enforce_detection=False,
-            detector_backend="mtcnn",
-            distance_metric="cosine",
-            silent=True
-        )
+        start_time = time.time()
+        face_objs = DeepFace.extract_faces(frame, detector_backend="mtcnn", enforce_detection=False)
         
-        # If we found a face
-        if len(result[0]['identity']) > 0:
-            # Get person's name from the file path
-            person = os.path.basename(result[0]['identity'][0]).split('.')[0]
-            match_score = 1 - result[0]['distance'][0]
+        if len(face_objs) > 0:
+            total_attempts += 1
+            facial_area = face_objs[0]['facial_area']
+            x, y, w, h = facial_area['x'], facial_area['y'], facial_area['w'], facial_area['h']
             
-            # Get face position
-            x = int(result[0]['source_x'][0])
-            y = int(result[0]['source_y'][0])
-            width = result[0]['source_w'][0]
-            height = result[0]['source_h'][0]
+            result = DeepFace.find(frame, db_path="face_photos", model_name=model,
+                                 enforce_detection=False, detector_backend="mtcnn",
+                                 distance_metric="cosine", silent=True)
             
-            # Set min confidence based on model
-            min_confidence = 0.65
-            if model == "ArcFace":
-                min_confidence = 0.45
-            elif model == "Dlib":
-                min_confidence = 0.85
+            processing_times.append(time.time() - start_time)
             
-            # Draw box and save to CSV if confidence is high enough
-            if match_score >= min_confidence:
-                # Green box for a match
-                cv2.rectangle(frame, (x, y), (x+width, y+height), (0,255,0), 2)
+            if len(result[0]['identity'].values) > 0:
+                person = os.path.basename(result[0]['identity'].values[0]).split('.')[0]
+                match_score = 1 - result[0]['distance'].values[0]
+                min_confidence = 0.45 if model == "ArcFace" else 0.85 if model == "Dlib" else 0.65
                 
-                # Save new person to CSV
-                if person not in people_found:
-                    time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    csv_file.writerow([time_now, person, f"{match_score:.2%}", model])
-                    print(f"\nFound {person} at {time_now} ({match_score:.2%})")
-                    people_found.add(person)
-                    
-                # Show name and the confidence
-                text = f"{person} ({match_score:.1%})"
-                cv2.putText(frame, text, (x+5, y-5), 
-                          cv2.FONT_HERSHEY_DUPLEX, 0.6, (255,255,255), 1)
+                if match_score >= min_confidence:
+                    successful_recognitions += 1
+                    confidence_scores.append(match_score)
+                    last_detected_person = person
+                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0,255,0), 2)
+                    cv2.putText(frame, f"{person} ({match_score:.1%})", (x+5, y-5), 
+                              cv2.FONT_HERSHEY_DUPLEX, 0.6, (255,255,255), 1)
+                    print(f"Recognized {person} with confidence: {match_score:.1%}")
+                else:
+                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0,0,255), 2)
+                    cv2.putText(frame, "Unknown", (x+5, y-5), 
+                              cv2.FONT_HERSHEY_DUPLEX, 0.6, (255,255,255), 1)
             else:
-                # Draw red box for unknown
-                cv2.rectangle(frame, (x, y), (x+width, y+height), (0,0,255), 2)
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (0,0,255), 2)
                 cv2.putText(frame, "Unknown", (x+5, y-5), 
-                          cv2.FONT_HERSHEY_DUPLEX, 0.6, (255,255,255), 1)
+                           cv2.FONT_HERSHEY_DUPLEX, 0.6, (255,255,255), 1)
         
         with frame_lock:
             current_frame = frame.copy()
-            
     except Exception as e:
         print(f"Error: {str(e)}")
-        
+    
     camera_is_busy = False
 
 def main():
