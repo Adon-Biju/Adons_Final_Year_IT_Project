@@ -6,11 +6,13 @@ import threading
 from datetime import datetime
 import csv
 
-
 camera_is_busy = False
 current_frame = None
 frame_lock = threading.Lock()
-people_found = set()
+last_detected_person = None
+total_attempts = successful_recognitions = 0
+processing_times = []
+confidence_scores = []
 
 def check_face(frame, model, csv_file):
     global camera_is_busy, current_frame
