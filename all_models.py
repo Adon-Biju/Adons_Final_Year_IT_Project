@@ -114,6 +114,16 @@ def main():
                 last_detected_person, model,
                 f"{avg_conf:.2%}", f"{avg_time:.3f}", f"{avg_rate:.1f}%"
             ])
+        
+        print(f"\nModel: {model}")
+        print(f"Total Attempts: {total_attempts}")
+        print(f"Successful Recognitions: {successful_recognitions}")
+        print(f"Average Recognition Rate: {avg_rate:.1f}%")
+        print(f"Average Processing Time: {avg_time:.3f} seconds")
+        print(f"Average Confidence: {avg_conf:.2%}")
+    else:
+        print("\nNo known faces were recognized")
+    
     camera.release()
     cv2.destroyAllWindows()
 
