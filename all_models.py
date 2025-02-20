@@ -97,15 +97,23 @@ def main():
         if time.time() % 0.3 < 0.1:
             threading.Thread(target=check_face, args=(frame.copy(), model)).start()
         
-        # Handle key presses
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
+        cv2.imshow('Face Recognition', current_frame if current_frame is not None else frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        elif key == ord('r'):
-            people_found.clear()
     
-    # Clean up
-    csv_file.close()
+    if total_attempts > 0 and last_detected_person and successful_recognitions > 0:
+        csv_path = f'face_records_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        with open(csv_path, 'w', newline='') as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(['Time', 'Name', 'Model', 'Average_Confidence',
+                           'Average_Recognition_Time_Seconds', 'Average_Recognition_Rate_Percent'])
+            
+            avg_rate, avg_time, avg_conf = calculate_averages()
+            writer.writerow([
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                last_detected_person, model,
+                f"{avg_conf:.2%}", f"{avg_time:.3f}", f"{avg_rate:.1f}%"
+            ])
     camera.release()
     cv2.destroyAllWindows()
 
