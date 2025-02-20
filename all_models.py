@@ -71,45 +71,31 @@ def check_face(frame, model):
     camera_is_busy = False
 
 def main():
-    # Choose a model out the ones we are evaluating
     models = ["ArcFace", "Facenet", "Dlib"]
     print("\nPick a model:")
     for i, m in enumerate(models, 1):
         print(f"{i}. {m}")
     model = models[int(input("\nEnter number (1-3): ")) - 1]
     
-    # Make sure we have a photos folder
     if not os.path.exists("face_photos"):
         os.makedirs("face_photos")
         print("\nPlease put photos in face_photos folder")
         return
     
-    # Setup camera and CSV file
     camera = cv2.VideoCapture(0)
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     
-    csv_path = f'face_records_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-    csv_file = open(csv_path, 'w', newline='')
-    writer = csv.writer(csv_file)
-    writer.writerow(['Time', 'Name', 'Confidence', 'Model'])
+    print("\nRunning face recognition for 15 seconds...")
+    start_time = time.time()
     
-    print("\nPress 'q' to quit or 'r' to reset")
-    
-    while True:
-        # Get camera frame
+    while time.time() - start_time < 15:
         success, frame = camera.read()
         if not success:
             break
-            
-        # Check for faces every 300ms
-        if time.time() % 0.3 < 0.1:
-            threading.Thread(target=check_face, 
-                           args=(frame.copy(), model, writer)).start()
         
-        # Show frame
-        display = current_frame if current_frame is not None else frame
-        cv2.imshow('Face Recognition', display)
+        if time.time() % 0.3 < 0.1:
+            threading.Thread(target=check_face, args=(frame.copy(), model)).start()
         
         # Handle key presses
         key = cv2.waitKey(1) & 0xFF
