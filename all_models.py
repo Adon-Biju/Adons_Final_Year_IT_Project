@@ -21,6 +21,27 @@ total_attempts = successful_recognitions = 0
 processing_times = []
 confidence_scores = []
 
+def get_model_choice():
+    while True:
+        models = ["ArcFace", "Facenet", "Dlib"]
+        print("\nPick a model:")
+        for i, m in enumerate(models, 1):
+            print(f"{i}. {m}")
+        
+        try:
+            choice = input("\nEnter number (1-3): ").strip()
+            if not choice:  # Check if input is empty
+                print("Please enter a number between 1 and 3")
+                continue
+                
+            number = int(choice)
+            if 1 <= number <= 3:
+                return models[number - 1]
+            else:
+                print("Please enter a number between 1 and 3")
+        except ValueError:
+            print("Please enter a valid number between 1 and 3")
+
 def calculate_averages():
     avg_rate = (successful_recognitions / total_attempts * 100) if total_attempts > 0 else 0
     avg_time = sum(processing_times) / len(processing_times) if processing_times else 0
