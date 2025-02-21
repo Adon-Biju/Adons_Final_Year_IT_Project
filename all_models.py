@@ -4,7 +4,14 @@ import os
 import time
 import threading
 from datetime import datetime
-import csv
+
+from database_operations import (
+    init_database, 
+    save_test_results, 
+    get_model_stats,
+    save_aggregate_stats,
+    get_historical_aggregate_stats
+)
 
 camera_is_busy = False
 current_frame = None
