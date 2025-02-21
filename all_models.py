@@ -30,7 +30,7 @@ def get_model_choice():
         
         try:
             choice = input("\nEnter number (1-3): ").strip()
-            if not choice:  # Check if input is empty
+            if not choice:  
                 print("Please enter a number between 1 and 3")
                 continue
                 
@@ -107,12 +107,14 @@ def check_face(frame, model):
 def display_statistics(stats, model_name):
     """Display current test results"""
     print(f"\nCurrent Test Results:")
+    print("-" * 50)
     print(f"Model: {model_name}")
     print(f"Total Attempts: {stats['total_attempts']}")
     print(f"Successful Recognitions: {stats['successful_recognitions']}")
     print(f"Average Recognition Rate: {stats['avg_rate']:.1f}%")
     print(f"Average Processing Time: {stats['avg_time']:.3f} seconds")
     print(f"Average Confidence: {stats['avg_confidence']:.2%}")
+    print("-" * 50)
 
 def display_historical_stats(historical_stats):
     """Display historical statistics"""
@@ -159,7 +161,7 @@ def main():
                 break
         
         if total_attempts > 0 and last_detected_person and successful_recognitions > 0:
-            # Calculate and save current test results
+        
             stats = calculate_averages()
             if save_test_results(model, last_detected_person, stats):
                 print("\nResults saved to database successfully!")
