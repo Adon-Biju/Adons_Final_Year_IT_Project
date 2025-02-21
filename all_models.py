@@ -25,7 +25,13 @@ def calculate_averages():
     avg_rate = (successful_recognitions / total_attempts * 100) if total_attempts > 0 else 0
     avg_time = sum(processing_times) / len(processing_times) if processing_times else 0
     avg_conf = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
-    return avg_rate, avg_time, avg_conf
+    return {
+        'avg_rate': avg_rate,
+        'avg_time': avg_time,
+        'avg_confidence': avg_conf,
+        'total_attempts': total_attempts,
+        'successful_recognitions': successful_recognitions
+    }
 
 def check_face(frame, model):
     global camera_is_busy, current_frame, total_attempts, successful_recognitions, last_detected_person
