@@ -125,62 +125,64 @@ def display_historical_stats(historical_stats):
         print(f"Overall Processing Time: {stat['overall_processing_time']:.3f} seconds")
         print(f"Overall Confidence: {stat['overall_confidence']:.2%}")
         print("-" * 50)
+
 def main():
-    models = ["ArcFace", "Facenet", "Dlib"]
-    print("\nPick a model:")
-    for i, m in enumerate(models, 1):
-        print(f"{i}. {m}")
-    model = models[int(input("\nEnter number (1-3): ")) - 1]
-    
-    if not os.path.exists("face_photos"):
-        os.makedirs("face_photos")
-        print("\nPlease put photos in face_photos folder")
-        return
-    
-    camera = cv2.VideoCapture(0)
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    
-    print("\nRunning face recognition for 15 seconds...")
-    start_time = time.time()
-    
-    while time.time() - start_time < 15:
-        success, frame = camera.read()
-        if not success:
-            break
+    try:
+        # Initialize the database first
+        init_database()
         
-        if time.time() % 0.3 < 0.1:
-            threading.Thread(target=check_face, args=(frame.copy(), model)).start()
-        
-        cv2.imshow('Face Recognition', current_frame if current_frame is not None else frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
     
-    if total_attempts > 0 and last_detected_person and successful_recognitions > 0:
-        csv_path = f'face_records_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-        with open(csv_path, 'w', newline='') as csv_file:
-            writer = csv.writer(csv_file)
-            writer.writerow(['Time', 'Name', 'Model', 'Average_Confidence',
-                           'Average_Recognition_Time_Seconds', 'Average_Recognition_Rate_Percent'])
+        model = get_model_choice()
+        
+        if not os.path.exists("face_photos"):
+            os.makedirs("face_photos")
+            print("\nPlease put photos in face_photos folder")
+            return
+        
+        camera = cv2.VideoCapture(0)
+        camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        
+        print("\nRunning face recognition for 15 seconds...")
+        start_time = time.time()
+        
+        while time.time() - start_time < 15:
+            success, frame = camera.read()
+            if not success:
+                break
             
-            avg_rate, avg_time, avg_conf = calculate_averages()
-            writer.writerow([
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                last_detected_person, model,
-                f"{avg_conf:.2%}", f"{avg_time:.3f}", f"{avg_rate:.1f}%"
-            ])
+            if time.time() % 0.3 < 0.1:
+                threading.Thread(target=check_face, args=(frame.copy(), model)).start()
+            
+            cv2.imshow('Face Recognition', current_frame if current_frame is not None else frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
         
-        print(f"\nModel: {model}")
-        print(f"Total Attempts: {total_attempts}")
-        print(f"Successful Recognitions: {successful_recognitions}")
-        print(f"Average Recognition Rate: {avg_rate:.1f}%")
-        print(f"Average Processing Time: {avg_time:.3f} seconds")
-        print(f"Average Confidence: {avg_conf:.2%}")
-    else:
-        print("\nNo known faces were recognized")
+        if total_attempts > 0 and last_detected_person and successful_recognitions > 0:
+            # Calculate and save current test results
+            stats = calculate_averages()
+            if save_test_results(model, last_detected_person, stats):
+                print("\nResults saved to database successfully!")
+            else:
+                print("\nFailed to save results to database.")
+            
+            # Display current test statistics
+            display_statistics(stats, model)
+            
+            # Save and display historical statistics
+            if save_aggregate_stats():
+                print("\nAggregate statistics saved successfully!")
+                historical_stats = get_historical_aggregate_stats()
+                display_historical_stats(historical_stats)
+        else:
+            print("\nNo known faces were recognized")
+        
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
     
-    camera.release()
-    cv2.destroyAllWindows()
+    finally:
+        camera.release()
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
