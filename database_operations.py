@@ -45,18 +45,21 @@ def execute_query(query, params=None, fetch_all=False):
             conn.commit()
             if fetch_all:
                 return cur.fetchall()
-            return cur.fetchone()
+            result = cur.fetchone()
+            
+            return result
         except psycopg2.OperationalError as e:
             if "does not exist" in str(e):
                 create_database()
                 return execute_query(query, params, fetch_all)
-            print(f"Database error: {str(e)}")
+            print(f"Database error: {str(e)}")  
             return None
         finally:
             cur.close()
             conn.close()
     except Exception as e:
-        print(f"Database error: {str(e)}")
+        if "no results to fetch" not in str(e):  # Don't print "no results" messages
+            print(f"Database error: {str(e)}")
         return None
 
 # Table creation statements
