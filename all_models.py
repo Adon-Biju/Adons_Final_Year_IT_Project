@@ -104,6 +104,27 @@ def check_face(frame, model):
     
     camera_is_busy = False
 
+def display_statistics(stats, model_name):
+    """Display current test results"""
+    print(f"\nCurrent Test Results:")
+    print(f"Model: {model_name}")
+    print(f"Total Attempts: {stats['total_attempts']}")
+    print(f"Successful Recognitions: {stats['successful_recognitions']}")
+    print(f"Average Recognition Rate: {stats['avg_rate']:.1f}%")
+    print(f"Average Processing Time: {stats['avg_time']:.3f} seconds")
+    print(f"Average Confidence: {stats['avg_confidence']:.2%}")
+
+def display_historical_stats(historical_stats):
+    """Display historical statistics"""
+    print("\nOverall Model Statistics:")
+    print("-" * 50)
+    for stat in historical_stats:
+        print(f"Model: {stat['model_name']}")
+        print(f"Total Tests: {stat['total_tests']}")
+        print(f"Overall Recognition Rate: {stat['overall_recognition_rate']:.1f}%")
+        print(f"Overall Processing Time: {stat['overall_processing_time']:.3f} seconds")
+        print(f"Overall Confidence: {stat['overall_confidence']:.2%}")
+        print("-" * 50)
 def main():
     models = ["ArcFace", "Facenet", "Dlib"]
     print("\nPick a model:")
