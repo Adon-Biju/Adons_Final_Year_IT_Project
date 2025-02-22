@@ -63,7 +63,7 @@ def check_face(frame, model):
     camera_is_busy = True
     
     try:
-        cv2.putText(frame, "Please look directly at the webcam", 
+        cv2.putText(frame, "Please look directly at the screen", 
                    (int(frame.shape[1]/2) - 200, 30),  
                    cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,255,255), 2)
         start_time = time.time()
