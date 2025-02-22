@@ -98,6 +98,13 @@ TABLES = {
             overall_processing_time DECIMAL(6,3),
             overall_confidence DECIMAL(5,2)
         )
+    """,
+    'unsuccessful_recognitions': """
+        CREATE TABLE IF NOT EXISTS unsuccessful_recognitions (
+            model_id INTEGER REFERENCES models(model_id) PRIMARY KEY,
+            count INTEGER DEFAULT 0,
+            last_updated TIMESTAMP NOT NULL
+        )
     """
 }
 
@@ -217,6 +224,45 @@ def save_aggregate_stats():
     except Exception as e:
         print(f"Error saving aggregate stats: {str(e)}")
         return False
+    
+
+def record_unsuccessful_recognition(model_name):
+    """Record an unsuccessful recognition attempt for a model"""
+    try:
+        # Get model_id
+        result = execute_query(
+            "SELECT model_id FROM models WHERE model_name = %s",
+            (model_name,)
+        )
+        if not result:
+            return False
+            
+        model_id = result['model_id']
+        
+        # Update unsuccessful recognitions count
+        execute_query("""
+            INSERT INTO unsuccessful_recognitions (model_id, count, last_updated)
+            VALUES (%s, 1, CURRENT_TIMESTAMP)
+            ON CONFLICT (model_id) DO UPDATE SET
+                count = unsuccessful_recognitions.count + 1,
+                last_updated = CURRENT_TIMESTAMP
+        """, (model_id,))
+        return True
+    except Exception as e:
+        print(f"Error recording unsuccessful recognition: {str(e)}")
+        return False
+    
+def get_unsuccessful_stats():
+    """Get unsuccessful recognition counts for all models"""
+    return execute_query("""
+        SELECT 
+            m.model_name,
+            COALESCE(ur.count, 0) as unsuccessful_count,
+            ur.last_updated
+        FROM models m
+        LEFT JOIN unsuccessful_recognitions ur ON m.model_id = ur.model_id
+        ORDER BY m.model_name
+    """, fetch_all=True)
 
 def get_historical_aggregate_stats():
     """Get latest statistics for each model"""
