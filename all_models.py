@@ -132,10 +132,11 @@ def display_historical_stats(historical_stats):
         print(f"Overall Processing Time: {stat['overall_processing_time']:.3f} seconds")
         print(f"Overall Confidence: {stat['overall_confidence']:.2%}")
         print("-" * 50)
+    
 
 def main():
     try:
-        # Initialize the database first
+     
         init_database()
         
     
@@ -173,10 +174,10 @@ def main():
             else:
                 print("\nFailed to save results to database.")
             
-            # Display current test statistics
+           
             display_statistics(stats, model)
             
-            # Save and display historical statistics
+           
             if save_aggregate_stats():
                 print("\nAggregate statistics saved successfully!")
                 historical_stats = get_historical_aggregate_stats()

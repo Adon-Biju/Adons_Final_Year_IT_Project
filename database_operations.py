@@ -2,7 +2,7 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from datetime import datetime
 
-# Database configuration
+
 DB_CONFIG = {
     'dbname': 'facial_recognition_data',
     'user': 'postgres',
