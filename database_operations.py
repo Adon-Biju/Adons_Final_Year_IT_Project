@@ -98,6 +98,13 @@ TABLES = {
             overall_processing_time DECIMAL(6,3),
             overall_confidence DECIMAL(5,2)
         )
+    """,
+    'failed_tests': """
+        CREATE TABLE IF NOT EXISTS failed_tests (
+            model_id INTEGER REFERENCES models(model_id) PRIMARY KEY,
+            count INTEGER DEFAULT 0,
+            last_updated TIMESTAMP NOT NULL
+        )
     """
 }
 
@@ -217,6 +224,44 @@ def save_aggregate_stats():
     except Exception as e:
         print(f"Error saving aggregate stats: {str(e)}")
         return False
+    
+def record_failed_tests(model_name):
+    """Record an failed attempt for a model"""
+    try:
+        
+        result = execute_query(
+            "SELECT model_id FROM models WHERE model_name = %s",
+            (model_name,)
+        )
+        if not result:
+            return False
+            
+        model_id = result['model_id']
+        
+       
+        execute_query("""
+            INSERT INTO failed_tests (model_id, count, last_updated)
+            VALUES (%s, 1, CURRENT_TIMESTAMP)
+            ON CONFLICT (model_id) DO UPDATE SET
+                count = failed_tests.count + 1,
+                last_updated = CURRENT_TIMESTAMP
+        """, (model_id,))
+        return True
+    except Exception as e:
+        print(f"Error recording failed tests: {str(e)}")
+        return False
+
+def get_failed_tests_stats():
+    """Get failed tests counts for all models"""
+    return execute_query("""
+        SELECT 
+            m.model_name,
+            COALESCE(ur.count, 0) as fail_count,
+            ur.last_updated
+        FROM models m
+        LEFT JOIN failed_tests ur ON m.model_id = ur.model_id
+        ORDER BY m.model_name
+    """, fetch_all=True)
 
 def get_historical_aggregate_stats():
     """Get latest statistics for each model"""

@@ -10,7 +10,9 @@ from database_operations import (
     save_test_results, 
     get_model_stats,
     save_aggregate_stats,
-    get_historical_aggregate_stats
+    get_historical_aggregate_stats,
+    record_failed_tests,
+    get_failed_tests_stats 
 )
 
 camera_is_busy = False
@@ -180,7 +182,17 @@ def main():
                 historical_stats = get_historical_aggregate_stats()
                 display_historical_stats(historical_stats)
         else:
-            print("\nNo known faces were recognized")
+            print("\n------------No known faces were recognized-------------")
+            record_failed_tests(model)
+            print("\nFailed Tests Statistics:")
+            print("-" * 50)
+            failed_tests_stats = get_failed_tests_stats()
+            for stat in failed_tests_stats:
+                print(f"Model: {stat['model_name']}")
+                print(f"Failed Test Attempts: {stat['fail_count']}")
+                if stat['last_updated']:
+                    print(f"Last Failed: {stat['last_updated']}")
+                print("-" * 50)
         
     except Exception as e:
         print(f"An error occurred: {str(e)}")
