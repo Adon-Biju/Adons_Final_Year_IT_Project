@@ -133,6 +133,33 @@ def display_historical_stats(historical_stats):
         print(f"Overall Confidence: {stat['overall_confidence']:.2%}")
         print("-" * 50)
 
+def warm_up_system(model):
+    """Pre-initialize the system before actual testing"""
+    print("\nInitializing face recognition system...")
+    try:
+        # Get first image file only
+        image_files = [f for f in os.listdir("face_photos") 
+                      if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+        if not image_files:
+            raise Exception("No image files found in face_photos directory")
+            
+        sample_img = cv2.imread(os.path.join("face_photos", image_files[0]))
+        start_time = time.time()
+        
+        # Warm up DeepFace
+        DeepFace.find(sample_img, db_path="face_photos", 
+                     model_name=model,
+                     enforce_detection=False, 
+                     detector_backend="mtcnn",
+                     distance_metric="cosine", 
+                     silent=True)
+        
+        print(f"System initialized successfully! (Took {time.time() - start_time:.2f} seconds)")
+        return True
+    except Exception as e:
+        print(f"Initialization error: {str(e)}")
+        return False
+
 def main():
     try:
        
@@ -144,6 +171,10 @@ def main():
         if not os.path.exists("face_photos"):
             os.makedirs("face_photos")
             print("\nPlease put photos in face_photos folder")
+            return
+        
+        if not warm_up_system(model):
+            print("Failed to initialize system. Please try again.")
             return
         
         camera = cv2.VideoCapture(0)
