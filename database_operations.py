@@ -12,7 +12,7 @@ DB_CONFIG = {
 }
 
 def create_database():
-    """Create database if it doesn't exist"""
+    """Create database and schema if they don't exist"""
     temp_config = DB_CONFIG.copy()
     temp_config['dbname'] = 'postgres'
     
@@ -21,7 +21,7 @@ def create_database():
         conn.autocommit = True
         cur = conn.cursor()
         
-        # Check if database exists
+      
         cur.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s", 
                    (DB_CONFIG['dbname'],))
         exists = cur.fetchone()
@@ -29,6 +29,20 @@ def create_database():
         if not exists:
             cur.execute(f"CREATE DATABASE {DB_CONFIG['dbname']}")
             print(f"Database '{DB_CONFIG['dbname']}' created successfully")
+            
+        # Connect to the database and create schema
+        conn.close()
+        conn = psycopg2.connect(**DB_CONFIG)
+        conn.autocommit = True
+        cur = conn.cursor()
+        
+        # Create public schema if it doesn't exist
+        cur.execute("""
+            CREATE SCHEMA IF NOT EXISTS public;
+            GRANT ALL ON SCHEMA public TO postgres;
+            GRANT ALL ON SCHEMA public TO public;
+        """)
+        
     except Exception as e:
         print(f"Error checking/creating database: {str(e)}")
     finally:
