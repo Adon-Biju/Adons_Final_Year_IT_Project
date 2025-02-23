@@ -2,7 +2,7 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from datetime import datetime
 
-# Database configuration
+
 DB_CONFIG = {
     'dbname': 'facial_recognition_data',
     'user': 'postgres',
@@ -58,11 +58,11 @@ def execute_query(query, params=None, fetch_all=False):
             cur.close()
             conn.close()
     except Exception as e:
-        if "no results to fetch" not in str(e):  # Don't print "no results" messages
+        if "no results to fetch" not in str(e):
             print(f"Database error: {str(e)}")
         return None
 
-# Table creation statements
+
 TABLES = {
     'models': """
         CREATE TABLE IF NOT EXISTS models (
@@ -116,7 +116,7 @@ def init_database():
         for table_name, create_statement in TABLES.items():
             execute_query(create_statement)
         
-        # Insert default models
+        
         execute_query("""
             INSERT INTO models (model_name)
             VALUES ('ArcFace'), ('Facenet'), ('Dlib')
@@ -146,7 +146,7 @@ def get_or_create_person(name):
 def save_test_results(model_name, person_name, stats):
     """Save individual test results"""
     try:
-        # Get model_id
+        
         result = execute_query(
             "SELECT model_id FROM models WHERE model_name = %s",
             (model_name,)

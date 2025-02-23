@@ -135,7 +135,7 @@ def display_historical_stats(historical_stats):
 
 def main():
     try:
-        # Initialize the database first
+       
         init_database()
         
     
@@ -173,7 +173,7 @@ def main():
             else:
                 print("\nFailed to save results to database.")
             
-            # Display current test statistics
+      
             display_statistics(stats, model)
             
             # Save and display historical statistics
