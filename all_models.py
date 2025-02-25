@@ -56,58 +56,80 @@ def calculate_averages():
         'successful_recognitions': successful_recognitions
     }
 
-def check_face(frame, model):
+def check_face(frame, model, expected_name):
     global camera_is_busy, current_frame, total_attempts, successful_recognitions, last_detected_person
     if camera_is_busy:
         return
     camera_is_busy = True
     
     try:
+       
         cv2.putText(frame, "Please look directly at the screen", 
                    (int(frame.shape[1]/2) - 200, 30),  
                    cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,255,255), 2)
+        
+       
         start_time = time.time()
         face_objs = DeepFace.extract_faces(frame, detector_backend="mtcnn", enforce_detection=False)
         
-        if len(face_objs) > 0:
+        if len(face_objs) > 0:  # If face is detected then
+            # Process detected face
             total_attempts += 1
             facial_area = face_objs[0]['facial_area']
             x, y, w, h = facial_area['x'], facial_area['y'], facial_area['w'], facial_area['h']
             
+            # Find matches
             result = DeepFace.find(frame, db_path="face_photos", model_name=model,
                                  enforce_detection=False, detector_backend="mtcnn",
                                  distance_metric="cosine", silent=True)
             
             processing_times.append(time.time() - start_time)
             
+            # Handle all match scenarios
             if len(result[0]['identity'].values) > 0:
                 person = os.path.basename(result[0]['identity'].values[0]).split('.')[0]
                 match_score = 1 - result[0]['distance'].values[0]
                 min_confidence = 0.45 if model == "ArcFace" else 0.85 if model == "Dlib" else 0.65
                 
+                # Handle different match scenarios
                 if match_score >= min_confidence:
-                    successful_recognitions += 1
-                    confidence_scores.append(match_score)
-                    last_detected_person = person
-                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0,255,0), 2)
-                    cv2.putText(frame, f"{person} ({match_score:.1%})", (x+5, y-5), 
-                              cv2.FONT_HERSHEY_DUPLEX, 0.6, (255,255,255), 1)
-                    print(f"Recognized {person} with confidence: {match_score:.1%}")
+                    if person == expected_name:
+                        handle_successful_match(frame, x, y, w, h, person, match_score)
+                    else:
+                        handle_false_positive(frame, x, y, w, h, person, expected_name)
                 else:
-                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0,0,255), 2)
-                    cv2.putText(frame, "Unknown", (x+5, y-5), 
-                              cv2.FONT_HERSHEY_DUPLEX, 0.6, (255,255,255), 1)
+                    draw_box(frame, x, y, w, h, "Unknown", (0,0,255))
             else:
-                cv2.rectangle(frame, (x, y), (x+w, y+h), (0,0,255), 2)
-                cv2.putText(frame, "Unknown", (x+5, y-5), 
-                           cv2.FONT_HERSHEY_DUPLEX, 0.6, (255,255,255), 1)
+                draw_box(frame, x, y, w, h, "Unknown", (0,0,255))
         
+       
         with frame_lock:
             current_frame = frame.copy()
+            
     except Exception as e:
         print(f"Error: {str(e)}")
-    
-    camera_is_busy = False
+    finally:
+        camera_is_busy = False  
+
+def draw_box(frame, x, y, w, h, text, color):
+    """Helper function to draw bounding box and text"""
+    cv2.rectangle(frame, (x, y), (x+w, y+h), color, 2)
+    cv2.putText(frame, text, (x+5, y-5), 
+                cv2.FONT_HERSHEY_DUPLEX, 0.6, (255,255,255), 1)
+
+def handle_successful_match(frame, x, y, w, h, person, match_score):
+    """Handle successful face recognition"""
+    global successful_recognitions, last_detected_person
+    successful_recognitions += 1
+    confidence_scores.append(match_score)
+    last_detected_person = person
+    draw_box(frame, x, y, w, h, f"{person} ({match_score:.1%})", (0,255,0))
+    print(f"Recognized {person} with confidence: {match_score:.1%}")
+
+def handle_false_positive(frame, x, y, w, h, person, expected_name):
+    """Handle false positive recognition"""
+    draw_box(frame, x, y, w, h, "Falsely Identified", (0,165,255))
+    print(f"False Positive for {expected_name} with {person}")
 
 def display_statistics(stats, model_name):
     """Display current test results"""
@@ -173,6 +195,12 @@ def main():
             print("\nPlease put photos in face_photos folder")
             return
         
+        
+        participant_name = input("\nEnter test participant ID (for record-keeping): ").strip()
+        if not participant_name:
+            print("Name is required")
+            return
+        
         if not warm_up_system(model):
             print("Failed to initialize system. Please try again.")
             return
@@ -190,13 +218,18 @@ def main():
                 break
             
             if time.time() % 0.3 < 0.1:
-                threading.Thread(target=check_face, args=(frame.copy(), model)).start()
+                threading.Thread(target=check_face, args=(frame.copy(), model, participant_name)).start()
             
             cv2.imshow('Face Recognition', current_frame if current_frame is not None else frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         
         if total_attempts > 0 and last_detected_person and successful_recognitions > 0:
+            if last_detected_person != participant_name:
+                print(f"\nSystem incorrectly identified you as {last_detected_person}")
+                print("Recording this as a failed test...")
+                record_failed_tests(model)
+                return
         
             stats = calculate_averages()
             if save_test_results(model, last_detected_person, stats):
